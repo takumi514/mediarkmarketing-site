@@ -2,9 +2,9 @@
    色:あたたかい茶とオレンジ、書体:Zen Maru Gothic(お店向けのチラシ・冊子・説明アニメと同じ調子)。
    共通の部品(ボタン・見出し・料金の札・質問など)は site.css の物を、色と書体だけ替えて使う。 */
 
-@font-face { font-family: "ZMG"; src: url("/mediarkmarketing-site/assets/fonts/zmg-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: "ZMG"; src: url("/mediarkmarketing-site/assets/fonts/zmg-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "ZMG"; src: url("/mediarkmarketing-site/assets/fonts/zmg-900.woff2") format("woff2"); font-weight: 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "ZMG"; src: url("/assets/fonts/zmg-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "ZMG"; src: url("/assets/fonts/zmg-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "ZMG"; src: url("/assets/fonts/zmg-900.woff2") format("woff2"); font-weight: 900; font-style: normal; font-display: swap; }
 
 .lite {
   --ink: #2a211b; --ink-2: #3b302a; --ink-3: #54473e;      /* 丸い書体は線が細く見えるので、本文・注記の色を一段濃くしてある */

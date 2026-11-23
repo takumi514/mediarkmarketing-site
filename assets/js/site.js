@@ -99,10 +99,10 @@
       if (bad.length) { bad[0].el.focus(); return; }
       var endpoint = form.getAttribute('data-endpoint');
       /* 確認用の版(送り先が空):送信せず、送信完了の画面だけを見せる。 */
-      if (!endpoint) { window.location.href = '/mediarkmarketing-site/thanks?preview=1'; return; }
+      if (!endpoint) { window.location.href = '/thanks?preview=1'; return; }
       /* 本番:送り先(data-endpoint)へ送り、うまくいったら /thanks へ進む(移し替えの手順を参照)。 */
       var trap = form.querySelector('input[name="_gotcha"]');
-      if (trap && trap.value) { window.location.href = '/mediarkmarketing-site/thanks'; return; }   /* 機械の書き込みは送らない */
+      if (trap && trap.value) { window.location.href = '/thanks'; return; }   /* 機械の書き込みは送らない */
       var data = {};
       [].forEach.call(form.elements, function (el) {
         if (!el.name || el.name === '_gotcha' || el.type === 'submit') return;
@@ -110,7 +110,7 @@
       });
       data._t = Date.now() - openedAt;                        /* 開いてから送るまでのミリ秒(受け口が、速すぎる機械の送信を見分ける) */
       var finish = function (ok) {
-        if (ok) { window.location.href = '/mediarkmarketing-site/thanks'; return; }
+        if (ok) { window.location.href = '/thanks'; return; }
         sending = false; sendBtn.disabled = false; sendBtn.removeAttribute('aria-busy');
         if (sendLabel) sendLabel.textContent = '送信する';
         if (sendErr) { sendErr.hidden = false; sendErr.focus(); }

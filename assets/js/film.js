@@ -15,7 +15,7 @@
   var REC = /rec/.test(HASH);
   var FIX = (HASH.match(/t=([\d.]+)/) || [])[1];
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var MOV = '/mediarkmarketing-site/assets/film/';
+  var MOV = '/assets/film/';
   var TRIAL = root.getAttribute('data-trial') || '1か月';      /* 印が無い時の控えも、今の期間(1か月)にしてある */
 
   /* ---------- 数の道具 ---------- */
