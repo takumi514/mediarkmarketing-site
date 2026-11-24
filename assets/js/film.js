@@ -4,7 +4,8 @@
    ・絵はすべて「時刻 t から決まる」ように描く(どこへ飛ばしても同じ絵になる。録画の時もコマ落ちしない)
    ・大きさは、舞台の幅に合わせた「1単位」で決める(横長=幅720単位、縦長=幅360単位)。文字がぼやけないよう、拡大・縮小ではなく実寸で組む
    ・無料お試しの期間は、HTMLの data-trial(build.py の TRIAL)から読む
-   ・場面:1 撮る → 2 仕上げる(AIが下書き → 直して公開・画像や表)→ 3 見る(9か国語の字幕と読み上げ)→ 4 確かめる → 5 料金
+   ・場面:1 撮る(スマホで撮り、パソコンで選ぶ)→ 2 仕上げる(パソコンで:AIが下書き → 直して公開・画像や表)→ 3 見る(スマホで。9か国語の字幕と読み上げ)→ 4 確かめる → 5 料金
+   ・スタンダードは「編集はパソコンで」。撮る・見るのはスマホ、送る・仕上げるのはノートパソコンで見せる(ライトのページには、この動く見本は無い)
    確認用の開き方:  #t=12.5(その秒で止めて開く) / #rec(録画用。自分では動かず、外から window.__film.seek(秒) で時刻を送る) */
 (function () {
   'use strict';
@@ -33,11 +34,11 @@
   function fl(t, sp, amp, ph) { return Math.sin(t * sp + (ph || 0)) * amp; }
 
   /* ---------- 場面の時刻 ---------- */
-  var DUR = [5.2, 11.4, 7.6, 5.2, 5.6], START = [], TOTAL = 0;
+  var DUR = [5.6, 11.4, 7.6, 5.2, 5.6], START = [], TOTAL = 0;
   DUR.forEach(function (d) { START.push(TOTAL); TOTAL += d; });
   var OUT = 0.42;                              /* 場面の終わりに、消えるのにかける時間 */
-  var SETTLE = [2.2, 5.4, 6.2, 3.6, 3.6];      /* 動きを止めて見せる時の、場面ごとの「見せたい時刻」 */
-  var FIRST = 2.2;                             /* 開いた時に、最初に見せる時刻(止め絵 film-poster と同じ) */
+  var SETTLE = [5.0, 5.4, 6.2, 3.6, 3.6];      /* 動きを止めて見せる時の、場面ごとの「見せたい時刻」 */
+  var FIRST = 1.6;                            /* 開いた時に、最初に見せる時刻(止め絵 film-poster と同じ) */
 
   /* ---------- 部品を作る(数字はすべて「単位」。K を掛けてピクセルにする) ---------- */
   var K = 1;
@@ -118,6 +119,16 @@
     p.W = w; p.H = h; p.scr = s; p.SW = sw; p.SH = sh; p.B = b;
     return p;
   }
+  /* ノートパソコン:画面の幅 sw(画面は 16:10)。ふた(黒いふち+画面)の下に、手前に開いたキーボードの台 */
+  function laptop(sw, parent) {
+    var b = sw * 0.024, sh = sw * 10 / 16, lw = sw + b * 2, lh = sh + b * 2 + sw * 0.014, bh = sw * 0.05, bo = sw * 0.075;
+    var g = size(mk('f-lap f3d', null, parent), lw, lh + bh);
+    var lid = box(mk('lid', null, g), 0, 0, lw, lh); lid.style.borderRadius = px(sw * 0.028) + ' ' + px(sw * 0.028) + ' ' + px(sw * 0.01) + ' ' + px(sw * 0.01);
+    var s = box(mk('scr', null, lid), b, b, sw, sh); s.style.borderRadius = px(sw * 0.006);
+    box(mk('base', '<i class="fx"></i>', g), -bo, lh - 1, lw + bo * 2, bh);
+    g.W = lw; g.H = lh + bh; g.scr = s; g.SW = sw; g.SH = sh; g.B = b;
+    return g;
+  }
   /* 見出し(上の小さい字+大きい字2行。2行目はオレンジ)。入る時刻 a・消える時刻 z は、場面の中の秒 */
   function head(parent, kick, l1, l2, center) {
     var h = mk('f-hd' + (center ? ' is-c' : ''), '<div class="f-kick"><i></i><span>' + kick + '</span></div><div class="f-h"><span class="ln">' + l1 + '</span>' + (l2 ? '<span class="ln hot">' + l2 + '</span>' : '') + '</div>', parent);
@@ -163,31 +174,42 @@
 
     /* --- 場面1:撮る --- */
     var s0 = { el: sc() };
-    s0.hd = head(s0.el, 'げんば動画スタジオなら', 'スマホで撮って、', '送るだけ。');
+    s0.hd = head(s0.el, 'げんば動画スタジオなら', 'スマホで撮って、', 'パソコンで選ぶだけ。');
     s0.shadow = size(mk('f-shadow', null, s0.el), W ? 400 : 300, W ? 54 : 40);
+    s0.lshadow = size(mk('f-shadow', null, s0.el), W ? 470 : 320, W ? 54 : 40);
+    s0.lap = laptop(W ? 400 : 300, s0.el);
     s0.ph = phoneLand(W ? 440 : 324, s0.el);
     s0.v = vid(); s0.ph.scr.appendChild(s0.v);
-    s0.dim = mk('dim', null, s0.ph.scr);
     s0.rec = pos(mk('f-rec', '<i></i><span>REC</span><b>00:12</b>', s0.ph), s0.ph.W * 0.05, s0.ph.H * 0.11);
     s0.recDot = s0.rec.querySelector('i'); s0.recT = s0.rec.querySelector('b');
     [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(function (c) {
       var k = pos(mk('f-corner', null, s0.ph), s0.ph.W * (c[0] ? 0.9 : 0.06), s0.ph.H * (c[1] ? 0.76 : 0.30));
       k.style[c[0] ? 'borderRightWidth' : 'borderLeftWidth'] = px(2); k.style[c[1] ? 'borderBottomWidth' : 'borderTopWidth'] = px(2);
     });
-    s0.sent = mk('f-sent', '<i>' + I.check + '</i><span>送りました</span>', s0.ph.scr);
-    s0.btn = mk('f-btn', I.up + '<span>動画をアップロード</span><em class="fx"><b class="fx"></b></em>', s0.el);
+    /* パソコンの画面:編集画面の一覧(上の帯・見本の動画のカード)と「動画をアップロード」 */
+    var ls = s0.lap.scr;
+    s0.home = mk('f-home', '<div class="bar"><b>げんば動画<em>スタジオ</em></b><span>すべての動画</span></div><div class="cards"><i></i><i></i><i></i><i></i><i></i><i></i></div>', ls);
+    s0.home.style.width = px(s0.lap.SW); s0.home.style.height = px(s0.lap.SH);
+    s0.btn = mk('f-btn', I.up + '<span>動画をアップロード</span><em class="fx"><b class="fx"></b></em>', ls);
     s0.btnBar = s0.btn.querySelector('em b'); s0.btnTxt = s0.btn.querySelector('span');
-    s0.tap = mk('f-tap', null, s0.el);
-    s0.cur = mk('f-cursor', I.cur, s0.el);
+    s0.dim = mk('dim', null, ls);
+    s0.sent = mk('f-sent', '<i>' + I.check + '</i><span>送りました</span>', ls);
+    s0.tap = mk('f-tap', null, ls);
+    s0.cur = mk('f-cursor', I.cur, ls);
     S.push(s0);
 
     /* --- 場面2:仕上げる(AIが下書き → 直したい所だけ直して公開。写真・図・表も) --- */
     var s1 = { el: sc() };
     s1.hdA = head(s1.el, 'あとは、AIが手伝います', 'AIが、', '下書きを作る。');
-    s1.hdB = head(s1.el, 'あとは、AIが手伝います', '直したい所だけ、', '直して公開。');
-    var FW = W ? 500 : 324, FH = FW * 9 / 16;
-    s1.shadow = size(mk('f-shadow', null, s1.el), FW * 0.9, W ? 52 : 38);
-    s1.fr = size(mk('f-frame f3d', null, s1.el), FW, FH); s1.fr.W = FW; s1.fr.H = FH;
+    s1.hdB = head(s1.el, 'パソコンの仕上げの画面で', '直したい所だけ、', '直して公開。');
+    /* ノートパソコンの画面に、編集画面(上の帯+動画)。動画の上に、AIの下書きの層が乗る */
+    s1.lap = laptop(W ? 400 : 290, s1.el);
+    var FW = s1.lap.SW, FH = FW * 9 / 16, BARH = s1.lap.SH - FH;
+    s1.shadow = size(mk('f-shadow', null, s1.el), s1.lap.W * 1.05, W ? 52 : 38);
+    s1.bar = mk('f-edbar', '<b>‹</b><span>作業前の安全確認</span><em>' + I.check + '<i>保存して公開する</i></em>', s1.lap.scr);
+    s1.bar.style.width = px(FW); s1.bar.style.height = px(BARH); s1.pubBtn = s1.bar.querySelector('em');
+    s1.fr = size(mk('f-frame', null, s1.lap.scr), FW, FH); s1.fr.W = FW; s1.fr.H = FH; s1.fr.style.top = px(BARH);
+    s1.cur = mk('f-cursor', I.cur, s1.lap.scr); s1.tap = mk('f-tap', null, s1.lap.scr);
     s1.v = vid(); s1.fr.appendChild(s1.v);
     s1.shade = mk('shade', null, s1.fr);
     s1.cutL = mk('cutbar', '<i></i><b></b>', s1.fr);                                  /* 最初のむだのカット(映像の下の帯の、左の端が切れる) */
@@ -200,7 +222,7 @@
     s1.tbl = mk('f-tbl', '<h6>溶接の前に、周りを確かめる</h6><table><tr><th>確かめる所</th><th>見る点</th></tr><tr><td>足元</td><td>油・紙くず・布が無い</td></tr><tr><td>周り</td><td>スプレー缶・塗料が無い</td></tr><tr><td>消火器</td><td>すぐ手の届く所にある</td></tr></table>', s1.fr);
     s1.pub = mk('f-pub', '<i>' + I.check + '</i><span>公開中</span>', s1.fr);
     s1.chips = mk('f-chips', null, s1.el);
-    s1.chip = [['cut', '最初のむだのカット'], ['sub', '字幕'], ['voice', '読み上げ'], ['warn', '注意マーク'], ['globe', '外国語の字幕と読み上げ']].map(function (c) {
+    s1.chip = [['cut', 'むだな所を切る'], ['sub', '字幕'], ['voice', '読み上げ'], ['warn', '注意マーク'], ['globe', '見る方の言葉']].map(function (c) {
       var e = document.createElement('div'); e.className = 'f-chip'; e.innerHTML = I[c[0]] + '<span>' + c[1] + '</span><i></i>'; s1.chips.appendChild(e); return e;
     });
     s1.tagE = mk('f-tag', I.pen + '<span>文を書き換えると、' + (W ? '' : '<br>') + '読み上げも作り直します</span>', s1.el);
@@ -218,7 +240,7 @@
     s2.ui.innerHTML = '<div class="bar"><b>‹</b>一覧へ</div><div class="vw"></div>' +
       '<div class="ctl"><i>' + I.play + '</i><em><b></b></em><span>0:14 / 1:07</span></div>' +
       '<div class="ttl">溶接作業の安全手順</div><div class="meta">安全作業の手順 ・ 長さ 1:07</div>' +
-      '<div class="lg">' + I.globe + '<span>字幕 / Language:<b>日本語のみ</b></span></div>' +
+      '<div class="lg">' + I.globe + '<span>言葉 / Language:<b>日本語だけ</b></span></div>' +
       '<div class="sm">読み上げは合成音声(機械の声)です</div>';
     s2.vw = s2.ui.querySelector('.vw'); s2.v = vid(); s2.vw.appendChild(s2.v);
     s2.mark = mk('f-mark sm', I.tri + '<span>注意</span>', s2.vw);
@@ -253,7 +275,7 @@
     s4.hd = head(s4.el, 'げんば動画スタジオ', '料金と<em>お試し</em>', null, true);
     s4.a = mk('f-slab hot f3d', '<div class="in"><small>' + TRIAL + '</small><b>無料</b><small>でお試し</small></div><i class="sheen fx"></i>', s4.el);
     s4.b = mk('f-slab f3d', '<div class="top">続ける場合</div><div class="in"><small>月額</small><b>30,250円</b><small>(税込)</small></div>', s4.el);
-    s4.c = mk('f-slab sm f3d', '<div class="in"><small>初期費用</small><b>なし</b></div>', s4.el);
+    s4.c = mk('f-slab sm f3d', '<div class="in"><small>初期費用</small><b>0円</b></div>', s4.el);
     s4.sheen = s4.a.querySelector('.sheen');
     s4.note = mk('f-note is-c', '<span>お試しは、1社様につき1回です。</span><br><span>何もしなければ自動で終わり、</span><span>料金はかかりません。</span>', s4.el);
     S.push(s4);
@@ -269,43 +291,57 @@
 
   /* ---------- 描く ---------- */
   var drawers = [
-    /* 場面1:撮る */
+    /* 場面1:撮る(スマホで撮る → 横にパソコンが出て、「動画をアップロード」で送る) */
     function (s, tau, t) {
       var W = wide, HX = W ? 44 : 20, HY = W ? 40 : 18;
       headAt(s.hd, HX, HY, tau, 0.05);
       var a = ramp(tau, 0.12, 1.25), px0 = W ? 238 : 18, py0 = W ? 208 : 136;
-      var send = ramp(tau, 3.05, 3.7, E.io), done = seg(tau, 4.1, 4.4);
-      tf(s.ph, px0 + (1 - a) * 150, py0 + fl(t, 1.2, 3.5) - send * 6, (1 - a) * -420,
-        lerp(18, 7, a) + fl(t, 0.9, 1.0), lerp(-52, W ? -17 : -11, a) + fl(t, 0.7, 1.6) + send * 3, lerp(-6, -1.5, a), 1, c01(a * 1.3));
-      tf(s.shadow, px0 + (s.ph.W - (W ? 400 : 300)) / 2 + 10, py0 + s.ph.H + (W ? 26 : 18), 0, 0, 0, 0, lerp(0.7, 1, a), a * 0.95);
-      var sec = Math.min(59, 12 + Math.floor(tau * 1.0)); text(s.recT, '00:' + (sec < 10 ? '0' : '') + sec);
-      s.recDot.style.opacity = (Math.floor(tau * 1.6) % 2) ? '.25' : '1';
-      op(s.rec, 1 - seg(tau, 3.0, 3.3));
-      op(s.dim, send * 0.74);
-      var sk = ramp(tau, 4.1, 4.6, E.back); s.sent.style.transform = 'translate(-50%,-50%) scale(' + lerp(0.8, 1, sk).toFixed(3) + ')'; op(s.sent, c01(sk * 1.4));
-      /* 「動画をアップロード」を押す → 送っています → 送りました */
-      var bw = s.btn.W, bh = s.btn.H, bx = W ? 56 : (M.W - bw) / 2, by = W ? 492 : 352;
-      var b = ramp(tau, 2.0, 2.55, E.back), press = Math.min(seg(tau, 3.0, 3.07), 1 - seg(tau, 3.07, 3.25));
-      tf(s.btn, bx, by + (1 - b) * 16, 0, 0, 0, 0, lerp(0.9, 1, b) * (1 - press * 0.05), c01(b * 1.4));
-      var fill = ramp(tau, 3.15, 4.1, E.io);
-      text(s.btnTxt, tau < 3.1 ? '動画をアップロード' : done >= 1 ? '送りました' : '送っています… ' + Math.round(fill * 100) + '%');
-      s.btnBar.style.transform = 'scaleX(' + fill.toFixed(3) + ')'; cls(s.btn, 'is-busy', tau >= 3.1 && done < 1); cls(s.btn, 'is-done', done >= 1);
-      var cu = ramp(tau, 2.35, 3.0, E.io), cx = lerp(bx + bw + 60, bx + bw * 0.84, cu), cy = lerp(by + 96, by + bh * 0.6, cu);
-      tf(s.cur, cx, cy, 0, 0, 0, 0, 1, seg(tau, 2.3, 2.55) * (1 - seg(tau, 3.5, 3.8)));
-      var tp = seg(tau, 3.04, 3.6);
-      tf(s.tap, bx + bw * 0.84, by + bh * 0.6, 0, 0, 0, 0, lerp(0.4, 1.8, E.out3(tp)), tp > 0 && tp < 1 ? (1 - tp) * 0.9 : 0);
+      /* 撮った後:スマホは左下へ小さく寄り(スマホの幅では左へ出ていき)、右からパソコンが入る */
+      var mv = ramp(tau, 2.0, 2.75, E.io), L = s.lap, lin = ramp(tau, 2.15, 3.0);
+      var sx = W ? lerp(px0, -96, mv) : px0 - mv * 380, sy = W ? lerp(py0, 300, mv) : py0, ssc = W ? lerp(1, 0.46, mv) : 1;
+      tf(s.ph, sx + (1 - a) * 150, sy + fl(t, 1.2, 3.5), (1 - a) * -420,
+        lerp(18, 7, a) + fl(t, 0.9, 1.0), lerp(-52, W ? -17 : -11, a) + fl(t, 0.7, 1.6), lerp(-6, -1.5, a), ssc, c01(a * 1.3) * (W ? 1 : 1 - mv));
+      tf(s.shadow, sx + (s.ph.W - (W ? 400 : 300)) / 2 + 10, sy + s.ph.H * (W ? lerp(1, 0.73, mv) : 1) + (W ? 26 : 18), 0, 0, 0, 0, lerp(0.7, 1, a) * ssc, a * 0.95 * (W ? 1 : 1 - mv));
+      var sec = Math.min(59, 12 + Math.floor(Math.min(tau, 2.2) * 1.0)); text(s.recT, '00:' + (sec < 10 ? '0' : '') + sec);
+      op(s.rec, 1 - seg(tau, 2.2, 2.5));
+      s.recDot.style.opacity = tau < 2.2 ? ((Math.floor(tau * 1.6) % 2) ? '.25' : '1') : '0';
+      var lx = W ? 270 : (M.W - L.W) / 2, ly = W ? 178 : 150;
+      tf(L, lx + (1 - lin) * 150, ly + fl(t, 1.1, 3), (1 - lin) * -380, lerp(12, 4, lin) + fl(t, 0.8, 0.5), lerp(-40, W ? -10 : -5, lin) + fl(t, 0.6, 0.9), 0, 1, c01(lin * 1.3));
+      tf(s.lshadow, lx + (L.W - (W ? 470 : 320)) / 2, ly + L.H + (W ? 14 : 10), 0, 0, 0, 0, lerp(0.7, 1, lin), lin * 0.9);
+      /* パソコンの画面:「動画をアップロード」を押す → 送っています → 送りました */
+      var SW_ = L.SW, SH_ = L.SH;
+      var bw = s.btn.W, bh = s.btn.H, bx = (SW_ - bw) / 2, by = SH_ * (W ? 0.36 : 0.3);
+      var b = ramp(tau, 2.7, 3.15, E.back), press = Math.min(seg(tau, 3.45, 3.52), 1 - seg(tau, 3.52, 3.7));
+      tf(s.btn, bx, by + (1 - b) * 12, 0, 0, 0, 0, lerp(0.9, 1, b) * (1 - press * 0.05), c01(b * 1.4) * (1 - seg(tau, 4.75, 5.0)));   /* 「送りました」の知らせが出たら、ボタンは消す(同じ言葉が2つ並ばないように) */
+      var fill = ramp(tau, 3.6, 4.6, E.io), done = seg(tau, 4.6, 4.9);
+      text(s.btnTxt, tau < 3.55 ? '動画をアップロード' : done >= 1 ? '送りました' : '送っています… ' + Math.round(fill * 100) + '%');
+      s.btnBar.style.transform = 'scaleX(' + fill.toFixed(3) + ')'; cls(s.btn, 'is-busy', tau >= 3.55 && done < 1); cls(s.btn, 'is-done', done >= 1);
+      var cu = ramp(tau, 2.85, 3.42, E.io), cx = lerp(bx + bw + 50, bx + bw * 0.8, cu), cy = lerp(by + bh + 60, by + bh * 0.6, cu);
+      tf(s.cur, cx, cy, 0, 0, 0, 0, 1, seg(tau, 2.8, 3.0) * (1 - seg(tau, 4.0, 4.3)));
+      var tp = seg(tau, 3.48, 4.0);
+      tf(s.tap, bx + bw * 0.8, by + bh * 0.6, 0, 0, 0, 0, lerp(0.4, 1.8, E.out3(tp)), tp > 0 && tp < 1 ? (1 - tp) * 0.9 : 0);
+      var sk = ramp(tau, 4.75, 5.2, E.back);
+      op(s.dim, c01(sk * 1.4) * 0.72);
+      s.sent.style.transform = 'translate(-50%,-50%) scale(' + lerp(0.8, 1, sk).toFixed(3) + ')'; op(s.sent, c01(sk * 1.4));
     },
     /* 場面2:仕上げる */
     function (s, tau, t) {
       var W = wide, HX = W ? 44 : 20, HY = W ? 40 : 18, SW = 6.0;                       /* SW=「直して公開」へ切り替わる時刻 */
       headAt(s.hdA, HX, HY, tau, 0.05, SW); headAt(s.hdB, HX, HY, tau, SW + 0.05);
-      var a = ramp(tau, 0.1, 1.15), fx = W ? 172 : 18, fy = W ? 184 : 128, F = s.fr;
-      tf(F, fx + (1 - a) * 130, fy + fl(t, 1.1, 3), (1 - a) * -380, lerp(12, 4, a) + fl(t, 0.8, 0.6), lerp(-40, W ? -8 : -5, a) + fl(t, 0.6, 1.0), 0, 1, c01(a * 1.3));
-      tf(s.shadow, fx + F.W * 0.05, fy + F.H + (W ? 22 : 14), 0, 0, 0, 0, lerp(0.7, 1, a), a * 0.9);
+      var a = ramp(tau, 0.1, 1.15), L = s.lap, fx = W ? 205 : (M.W - L.W) / 2, fy = W ? 178 : 118;
+      tf(L, fx + (1 - a) * 130, fy + fl(t, 1.1, 3), (1 - a) * -380, lerp(12, 4, a) + fl(t, 0.8, 0.6), lerp(-40, W ? -8 : -5, a) + fl(t, 0.6, 1.0), 0, 1, c01(a * 1.3));
+      tf(s.shadow, fx - L.W * 0.025, fy + L.H + (W ? 10 : 6), 0, 0, 0, 0, lerp(0.7, 1, a), a * 0.9);
+      /* 公開:マウスで、上の帯の「保存して公開する」を押す */
+      var pbx = s.pubBtn.offsetLeft / K, pby = s.pubBtn.offsetTop / K, pbw = s.pubBtn.offsetWidth / K, pbh = s.pubBtn.offsetHeight / K;
+      var cu = ramp(tau, 9.75, 10.15, E.io), ccx = lerp(pbx + pbw * 0.3, pbx + pbw * 0.55, cu), ccy = lerp(pby + 90, pby + pbh * 0.62, cu);
+      tf(s.cur, ccx, ccy, 0, 0, 0, 0, 1, seg(tau, 9.7, 9.9) * (1 - seg(tau, 10.7, 10.95)));
+      var tq = seg(tau, 10.2, 10.7);
+      tf(s.tap, pbx + pbw * 0.55, pby + pbh * 0.62, 0, 0, 0, 0, lerp(0.3, 1.2, E.out3(tq)), tq > 0 && tq < 1 ? (1 - tq) * 0.9 : 0);
+      cls(s.pubBtn, 'is-press', tau >= 10.2 && tau < 10.35);
       /* AIが下書きを作る:一覧の札が、順に点く(本番の説明アニメと同じ順) */
       var ON = [1.0, 1.75, 2.5, 3.25, 4.05];
       var ck = ramp(tau, 0.55, 1.0) * (1 - seg(tau, SW - 0.25, SW + 0.1));
-      pop(s.chips, W ? 40 : 18, W ? 488 : 322, ck, ck);
+      pop(s.chips, W ? 40 : 18, W ? 488 : 331, ck, ck);
       s.chip.forEach(function (c, i) { cls(c, 'on', tau >= ON[i]); var p = seg(tau, ON[i], ON[i] + 0.35); c.style.transform = 'scale(' + (p > 0 && p < 1 ? 1 + Math.sin(p * Math.PI) * 0.05 : 1).toFixed(3) + ')'; });
       /* 最初のむだのカット */
       var cut = ramp(tau, ON[0], ON[0] + 0.5, E.io);
@@ -321,13 +357,13 @@
       var mkp = ramp(tau, ON[3], ON[3] + 0.4, E.back);
       s.mark.style.transform = 'scale(' + lerp(0.5, 1, mkp).toFixed(3) + ')'; op(s.mark, c01(mkp * 1.6));
       cls(s.cap, 'is-warn', tau >= ON[3]);
-      /* 外国語の字幕と読み上げ */
+      /* 見る方の言葉(外国語の字幕と読み上げ) */
       var lg = ramp(tau, ON[4], ON[4] + 0.4, E.back);
       s.lang.style.transform = 'scale(' + lerp(0.6, 1, lg).toFixed(3) + ')'; op(s.lang, c01(lg * 1.6) * (1 - seg(tau, SW - 0.3, SW)));
       /* 直したい所だけ直す:字幕の文を書き換える */
       cls(s.cap, 'is-edit', tau >= 6.6 && tau < 7.85);
       text(s.capTxt, tau >= 7.15 ? '保護面を、必ずつけてから始める' : '保護面をつけてから始める');
-      var tgY = W ? 492 : 328, te = ramp(tau, 6.6, 7.0, E.back) * (1 - seg(tau, 7.8, 8.05));
+      var tgY = W ? 492 : 336, te = ramp(tau, 6.6, 7.0, E.back) * (1 - seg(tau, 7.8, 8.05));
       pop(s.tagE, W ? fx + 36 : (M.W - s.tagE.W) / 2, tgY, te);
       /* 写真・図・表も、大きく出せます */
       var tb = ramp(tau, 8.15, 8.7, E.back) * (1 - seg(tau, 9.85, 10.1));
@@ -357,7 +393,7 @@
       s.lis.forEach(function (li, i) { cls(li, 'on', i === sel); });
       var fk = ramp(tau, SW + 2.15, SW + 2.5, E.io);
       op(s.capP, fk); op(s.capJ, 1 - fk);
-      text(s.lgB, fk > 0.5 ? 'Português' : '日本語のみ'); cls(s.lg, 'on', fk > 0.5);
+      text(s.lgB, fk > 0.5 ? 'Português' : '日本語だけ'); cls(s.lg, 'on', fk > 0.5);
     },
     /* 場面4:確かめる */
     function (s, tau, t) {
